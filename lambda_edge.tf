@@ -69,6 +69,5 @@ resource "aws_lambda_function" "folder_index_redirect" {
   publish          = true
   role             = aws_iam_role.lambda_execution.arn
   runtime          = "nodejs10.x"
-
   tags = var.tags
 }

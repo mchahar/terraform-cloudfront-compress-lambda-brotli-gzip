@@ -7,17 +7,12 @@ variable "aws_region" {
 variable "domain_name" {
   description = "FQDN of cloudfront alias for the website - blog.site.com"
   type        = string
+  default     = "mahesh-mt"
 }
 
-variable "hosted_zone" {
-  description = "Root domain of website - site.com"
-  type        = string
-}
 
 variable "tags" {
   default     = {}
   description = "Map of the tags for all resources"
   type        = map
 }
-
-

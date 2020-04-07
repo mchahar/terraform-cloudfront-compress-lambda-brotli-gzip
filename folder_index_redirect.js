@@ -1,23 +1,32 @@
-// This is a solution for the problem with s3 websites and subfolders www.site.com/folder/ will not auto 
-//   redirect to www.site.com/folder/index.html like most other modern web servers
-// This should be deployed as a Lambda@Edge connected to the CloudFront Distribution
-// Only Node.js 10.x Runtime supports Lambda@Edge for right now, we have to wait for AWS to support 12x and beyond
-
-'use strict';
-
 exports.handler = (event, context, callback) => {
-    /*
-     * Expand S3 request to have index.html if it ends in /
-     */
-    const request = event.Records[0].cf.request;
-    if ((request.uri !== "/") /* Not the root object, which redirects properly */
-        && (request.uri.endsWith("/") /* Folder with slash */
-            || (request.uri.lastIndexOf(".") < request.uri.lastIndexOf("/")) /* Most likely a folder, it has no extension (heuristic) */
-            )) {
-        if (request.uri.endsWith("/"))
-            request.uri = request.uri.concat("index.html");
-        else
-            request.uri = request.uri.concat("/index.html");
+  // get the request from the event from Cloud Front
+  const {request} = event.Records[0].cf
+  // extract the headers
+  const {headers = {}, uri} = request
+  // we support css and javascript files
+  const isSupportedFile = uri.endsWith('.css') || uri.endsWith('.js')
+  if (headers && isSupportedFile) {
+    let gz = false
+    let br = false
+    // get the accept-encoding header
+    const ae = headers['accept-encoding']
+    if (ae) {
+      for (let i = 0; i < ae.length; i++) {
+        const {value} = ae[i]
+        const bits = value.split(/\s*,\s*/)
+        if (bits.includes('br')) {
+          br = true
+          break
+        } else if (bits.includes('gzip')) {
+          gz = true
+          break
+        }
+      }
     }
-    callback(null, request);
-};
+    // If br is supported use .br sufffix, .gz for gzip :)
+    if (br) request.uri += '.br'
+    else if (gz) request.uri += '.gz'
+  }
+  // execute callback
+  callback(null, request)
+}
